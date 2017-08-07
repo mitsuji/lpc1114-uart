@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "LPC1100.h"
 
+void BoostMainClock(void);
 void UART_config(void);
 char UART_putc(char ch);
 char UART_getc(void);
@@ -10,6 +11,8 @@ int  uart_status_txd(void);
 
 int main()
 {
+  BoostMainClock(); // 48Mhz
+
   UART_config();
   
   UART_putc('H');
@@ -32,6 +35,21 @@ int main()
 }
 
 
+void BoostMainClock(void)
+{
+  // MSEL: 4(0b00011)
+  // PSEL: 2(0b01)
+  // 0b0100011
+  SYSPLLCTRL = 0x00000023; // 48Mhz
+  PDRUNCFG &= ~(0x1<<7);   // Enpower PLL
+  
+  MAINCLKSEL = 0x03; // sys_pllclkout
+  MAINCLKUEN = 0x00;
+  MAINCLKUEN = 0x01;
+  while (!(MAINCLKUEN & 0x01));   
+}
+
+
 void UART_config(void)
 {
   
@@ -47,14 +65,12 @@ void UART_config(void)
 
   U0DLM = 0;
 
-  // Baud Rate 38400, System Clock 12MHz
+  // Baud Rate 115,200, System Clock 48MHz
   // PCLK / Baud Rate / 16 ≒ (256 * U0DLM + U0DLL) * (1 + DivAddVal / MulVal) 
-  // 12,000,000 / 38,400 / 16 ≒ (256 * 0 + 17) * (1 + 1 / 6) 
-  //  U0DLL = 67; // 48MHz
-  //  U0DLL = 56; // 40MHz
-  U0DLL = 17; // 12MHz
+  // 48,000,000 / 115,200 / 16 ≒ (256 * 0 + 23) * (1 + 1 / 7) 
+  U0DLL = 23;
 
-  U0FDR = (6<<4) | (1<<0);
+  U0FDR = (7<<4) | (1<<0);
   
   U0FCR = (0<<6) | (0<<2)| (0<<1)| 1;
   
