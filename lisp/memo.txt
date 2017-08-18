@@ -7,20 +7,13 @@ https://github.com/rui314/minilisp
 http://www.softwarepreservation.org/projects/LISP/book/LISP%201.5%20Programmers%20Manual.pdf
 http://www.schemers.org/Documents/Standards/R5RS/r5rs.pdf
 
+[TODO]
+* implement atom
+* implement equal
+* implement and
+* implement or
 
-cons
-car
-cdr
-atom
-equal
+* implement sym_udef
+* implement GC
+* implement Exception Handling
 
-cond
-define
-set!
-lambda
-quote
-
-begin
-
-and
-or

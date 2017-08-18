@@ -1,5 +1,3 @@
-// gcc -std=c99 -o lisp main.c
-
 #include <stdlib.h>
 
 #include "io.h"
@@ -8,77 +6,8 @@
 #include "lexia.h"
 
 
-// S式
-// symbol, number はまとめてくる
-// '(', ')', spase
-
-// cons
-// car
-// cdr
-// atom
-// equal
-
-// ひとまず int16_t の四則演算
-// add
-// sub
-// mul
-// div
-// mod
-
-// symbol, int16_t, cons
-// symbol length max -> 8byte (8 or 7)
-// symbol length max -> 6byte?
-
-// pointer 2byte
-// symbol  length max 6
-// cell size max 8byte
-
 // define, set! したもの以外は eval,print後 消してOK
 // cons sell をたどって free ?
-
-// 
-// * [re] symbol table 
-// ** cons
-// ** car
-// ** cdr
-// ** add
-// ** sub
-// ** mul
-// ** div
-// ** mod
-// * []
-//
-//
-//
-
-// enum { }
-
-
-// lexia
-// * manage buffer
-// * generate token
-//
-
-// allocator
-// * sram   4kb
-// * flash 32kb
-//
-// define したら flashにコピー
-// eval したら sram から消す
-//
-
-// cons cel
-// *
-// *
-//
-
-// synta
-// * 
-// * generate object tree
-//
-
-// eval
-
 
 
 void myexit(int code);
