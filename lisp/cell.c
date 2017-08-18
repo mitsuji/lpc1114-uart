@@ -50,7 +50,8 @@ static cell * to_ptr (cell_addr a)
 
 static cell_addr from_ptr (cell * p)
 {
-  return (cell_addr) ((uint64_t)p - (uint64_t)stacka_head());
+//  return (cell_addr) ((uint64_t)p - (uint64_t)stacka_head());
+  return (cell_addr) ((uint32_t)p - (uint32_t)stacka_head());
 }
 
 
