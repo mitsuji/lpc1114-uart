@@ -18,40 +18,9 @@ void test_lexia();
 
 
 
-
-struct s1
-{
-  cell_type type;
-  char data[7];  
-};
-
-struct cons
-{
-  cell_addr car; // uint16_t
-  cell_addr cdr; // uint16_t
-};
-
-struct lambda
-{
-  cell_addr args; // uint16_t
-  cell_addr code; // uint16_t
-  cell_addr env;  // uint16_t
-};
-
-
-
-
-
-
-
 int main ( int argc, char** argv )
 {
-  io_printf("%d\n",sizeof(struct s1));
-  io_printf("%d\n",sizeof(int16_t));
-  io_printf("%d\n",sizeof(struct cons));
-  io_printf("%d\n",sizeof(struct lambda));
-  io_printf("%d\n",sizeof(void *));
-  //  test_cell();
+  test_cell();
   //  test_lexia();
 }
 
