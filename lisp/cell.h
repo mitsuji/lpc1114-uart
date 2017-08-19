@@ -15,6 +15,8 @@ typedef uint16_t cell_addr;
 typedef struct _cell
 {
   cell_type type;
+  char data[1];
+  /*
   union {
     char atom_sym_name[7];
     int16_t atom_int_val;
@@ -29,7 +31,8 @@ typedef struct _cell
     } lambda_cell;
     void * primop_cell;  
   };
-} cell; // 16byte(amd64) -> 12byte(arm32)
+  */
+} cell;
 
 
 int cell_init ();
