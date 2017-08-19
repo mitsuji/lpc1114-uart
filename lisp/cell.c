@@ -63,7 +63,6 @@ static cell * to_ptr (cell_addr a)
 
 static cell_addr from_ptr (cell * p)
 {
-//  return (cell_addr) ((uint64_t)p - (uint64_t)stacka_head());
   return (cell_addr) ((uint32_t)p - (uint32_t)stacka_head());
 }
 
@@ -75,7 +74,6 @@ static int find_sym (cell ** out_y, char * name)
     {
       cell * car;
       get_car(&car,l);
-      //      if (!strcmp(name, car->atom_sym_name))
       if (!strcmp(name, car->data))
 	{
 	  *out_y = l;
@@ -135,13 +133,12 @@ static int extend_list (cell ** out_y, cell * env, cell * syms, cell * vals)
 static int extend_top_env (cell * sym, cell * val)
 {
   cell * cons, * cdr, * env;
-  data_cons * p;
+  data_cons * dp;
   alloc_cons (&cons,sym,val);
   get_cdr(&cdr,list_top_env);
   alloc_cons(&env,cons,cdr);
-  //  list_top_env->cons_cell.cdr = from_ptr(env);
-  p = (data_cons *)(list_top_env->data);
-  p->cdr = from_ptr(env);
+  dp = (data_cons *)(list_top_env->data);
+  dp->cdr = from_ptr(env);
   return 0;
 }
 
@@ -217,8 +214,7 @@ static int prim_sum(cell ** out_y, cell * args)
     {
       cell * car;
       get_car(&car, args);
-      //      sum += car->atom_int_val;
-      sum += (int16_t)*(car->data);
+      sum += *((int16_t *)car->data);
       get_cdr(&args,args);
     }
   alloc_int(out_y, sum);
@@ -227,18 +223,16 @@ static int prim_sum(cell ** out_y, cell * args)
 
 static int prim_sub(cell ** out_y, cell * args)
 {
-  int sum;
+  int16_t sum;
   cell * car;
   get_car(&car,args);
   get_cdr(&args,args);
-  //  sum = car->atom_int_val;
-  sum = (int16_t)*(car->data);
+  sum = *((int16_t *)car->data);
   while (args != sym_nil )
     {
       cell * car;
       get_car(&car, args);
-      //      sum -= car->atom_int_val;
-      sum -= (int16_t)*(car->data);
+      sum -= *((int16_t *)car->data);
       get_cdr(&args,args);
     }
   alloc_int(out_y, sum);
@@ -247,13 +241,12 @@ static int prim_sub(cell ** out_y, cell * args)
 
 static int prim_prod(cell ** out_y, cell * args)
 {
-  int prod = 1;
+  int16_t prod = 1;
   while (args != sym_nil)
     {
       cell * car;
       get_car(&car, args);
-      //      prod *= car->atom_int_val;
-      prod *= (int16_t)*(car->data);
+      prod *= *((int16_t *)car->data);
       get_cdr(&args,args);
     }
   alloc_int(out_y, prod);
@@ -262,18 +255,16 @@ static int prim_prod(cell ** out_y, cell * args)
 
 static int prim_div(cell ** out_y, cell * args)
 {
-  int prod;
+  int16_t prod;
   cell * car;
   get_car(&car,args);
   get_cdr(&args,args);
-  //  prod = car->atom_int_val;
-  prod = (int16_t)*(car->data);
+  prod = *((int16_t *)car->data);
   while (args != sym_nil )
     {
       cell * car;
       get_car(&car, args);
-      //      prod /= car->atom_int_val;
-      prod /= (int16_t)*(car->data);
+      prod /= *((int16_t *)car->data);
       get_cdr(&args,args);
     }
   alloc_int(out_y, prod);
@@ -288,10 +279,8 @@ static int num_args (int16_t * out_x, int16_t * out_y, cell * args)
   get_cdr(&cdr,args);
   get_car(&cdrcar,cdr);
 
-  //  *out_x = car->atom_int_val;
-  //  *out_y = cdrcar->atom_int_val;
-  *out_x = (int16_t)*(car->data);
-  *out_y = (int16_t)*(cdrcar->data);
+  *out_x = *((int16_t *)car->data);
+  *out_y = *((int16_t *)cdrcar->data);
 }
 
 static int prim_eq(cell ** out_y, cell * args)
@@ -343,7 +332,6 @@ static int alloc_sym (cell ** out_y, char * name)
   stacka_malloc((char **)&r, cell_size);
 
   r->type = ATOM_SYM;
-  //  strcpy(r->atom_sym_name, name);
   strcpy(r->data, name);
   *out_y = r;
   return 0;
@@ -358,8 +346,6 @@ static int alloc_int (cell ** out_y, int16_t v)
   stacka_malloc((char **)&r, cell_size);
 
   r->type = ATOM_INT;
-  //  r->atom_int_val = v;
-  //  *(r->data) = v;
   dp = (int16_t *)(r->data);
   *dp = v;
   *out_y = r;
@@ -375,8 +361,6 @@ static int alloc_cons (cell ** out_y, cell * car, cell * cdr)
   stacka_malloc((char **)&r, cell_size);
 
   r->type = CONS;
-  //  r->cons_cell.car = from_ptr(car);
-  //  r->cons_cell.cdr = from_ptr(cdr);
   dp = (data_cons *) (r->data);
   dp->car = from_ptr(car);
   dp->cdr = from_ptr(cdr);
@@ -393,9 +377,6 @@ static int alloc_lambda (cell ** out_y, cell * args, cell * code, cell * env)
   stacka_malloc((char **)&r, cell_size);
 
   r->type = LAMBDA;
-  //  r->lambda_cell.args = from_ptr(args);
-  //  r->lambda_cell.code = from_ptr(code);
-  //  r->lambda_cell.env  = from_ptr(env);
   dp = (data_lambda *) (r->data);
   dp->args = from_ptr(args);
   dp->code = from_ptr(code);
@@ -413,7 +394,6 @@ static int alloc_primop (cell ** out_y, void * p)
   stacka_malloc((char **)&r, cell_size);
 
   r->type = PRIMOP;
-  //  r->primop_cell = p;
   dp = (void **) (r->data);
   *dp = p;
   *out_y = r;
@@ -424,7 +404,7 @@ static int alloc_primop (cell ** out_y, void * p)
 
 static int get_car (cell ** out_y, cell * x)
 {
-  data_cons * p;
+  data_cons * dp;
   if(x == 0)
     {
       *out_y = sym_nil;
@@ -445,15 +425,14 @@ static int get_car (cell ** out_y, cell * x)
       return 0x00000002;
     }
 
-    //  *out_y = to_ptr(x->cons_cell.car);
-  p = (data_cons *)x->data;
-  *out_y = to_ptr(p->car);
+  dp = (data_cons *)x->data;
+  *out_y = to_ptr(dp->car);
   return 0;
 }
 
 static int get_cdr (cell **out_y, cell * x)
 {
-  data_cons * p;
+  data_cons * dp;
   if(x == sym_nil)
     {
       *out_y = sym_nil;
@@ -467,18 +446,16 @@ static int get_cdr (cell **out_y, cell * x)
       return 0x00000003;
     }
   
-  p = (data_cons *)x->data;
+  dp = (data_cons *)x->data;
   
-  //  if(to_ptr(x->cons_cell.cdr) == 0)
-  if(to_ptr(p->cdr) == 0)
+  if(to_ptr(dp->cdr) == 0)
     {
       //      io_printf("error: cdr list element is zero-pointer at %d\n", 0);
       *out_y = sym_nil;
       return 0x00000004;
     }
   
-  //  *out_y = to_ptr(x->cons_cell.cdr);
-  *out_y = to_ptr(p->cdr);
+  *out_y = to_ptr(dp->cdr);
   return 0;
 }
 
@@ -767,16 +744,15 @@ static int eval_raw (cell ** out_y, cell * exp, cell * env)
 	  {
 	    cell * cdr, * cdrcar, * cdrcdr, * cdrcdrcar;
 	    cell * x, * ecdrcdrcar;
-	    data_cons * p;
+	    data_cons * dp;
 	    get_cdr(&cdr,exp);
 	    get_car(&cdrcar,cdr);
 	    get_cdr(&cdrcdr,cdr);
 	    get_car(&cdrcdrcar,cdrcdr);
 	    find(&x,cdrcar,env);
 	    eval_raw(&ecdrcdrcar,cdrcdrcar,env);
-	    //	    x->cons_cell.cdr = from_ptr(ecdrcdrcar);
-	    p = (data_cons *) x->data;
-	    p->cdr = from_ptr(ecdrcdrcar);
+	    dp = (data_cons *) x->data;
+	    dp->cdr = from_ptr(ecdrcdrcar);
 	    *out_y = ecdrcdrcar;
 	    return 0;
 	  }
@@ -819,21 +795,17 @@ static int eval_raw (cell ** out_y, cell * exp, cell * env)
 	    if (proc->type == LAMBDA )
 	      {
 		cell * lmdargs, * lmdcode, * lmdenv ;
-		data_lambda * p;
-		//		lmdargs = to_ptr(proc->lambda_cell.args);
-		//		lmdcode = to_ptr(proc->lambda_cell.code);
-		//		lmdenv  = to_ptr(proc->lambda_cell.env);
-		p = (data_lambda *)proc->data;
-		lmdargs = to_ptr(p->args);
-		lmdcode = to_ptr(p->code);
-		lmdenv  = to_ptr(p->env);
+		data_lambda * dp;
+		dp = (data_lambda *)proc->data;
+		lmdargs = to_ptr(dp->args);
+		lmdcode = to_ptr(dp->code);
+		lmdenv  = to_ptr(dp->env);
 		extend_list(&env, lmdenv, lmdargs, args);
 		alloc_cons(&exp,sym_begin,lmdcode);
 		goto eval_start;
 	      }
 	    else if ( proc->type == PRIMOP )
 	      {
-//		((primop) proc->primop_cell)(out_y, args);
 		((primop) *((void **)proc->data))(out_y, args);
 		return 0;
 	      }
@@ -893,14 +865,12 @@ int cell_print (cell * x)
 	}
       else
 	{
-	  //	  io_printf("%s", x->atom_sym_name);
 	  io_printf("%s", x->data);
 	}
       break;
       
     case ATOM_INT:
-      //      io_printf("%d", x->atom_int_val);
-      io_printf("%d", (int16_t)*(x->data));
+      io_printf("%d", *((int16_t *)x->data));
       break;
       
     case CONS: 
