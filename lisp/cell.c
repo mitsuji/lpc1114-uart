@@ -32,6 +32,7 @@ typedef struct _data_lambda
   cell_addr env;  // uint16_t
 } data_lambda;
 
+typedef int (*primop)(cell **, cell *);
 
 static cell * list_syms;
 static cell * list_top_env;
@@ -46,11 +47,12 @@ static cell * sym_setb;
 static cell * sym_begin;
 
 
+
 static int alloc_sym (cell ** out_y, char * name);
 static int alloc_int (cell ** out_y, int16_t v);
 static int alloc_cons (cell ** out_y, cell * car, cell * cdr);
 static int alloc_lambda (cell ** out_y, cell * args, cell * code, cell * env);
-static int alloc_primop (cell ** out_y, void * p);
+static int alloc_primop (cell ** out_y, primop p);
 
 static int get_car (cell ** out_y, cell * x);
 static int get_cdr (cell ** out_y, cell * x);
@@ -128,21 +130,6 @@ static int extend_list (cell ** out_y, cell * env, cell * syms, cell * vals)
     }
 }
 
-
-
-static int extend_top_env (cell * sym, cell * val)
-{
-  cell * cons, * cdr, * env;
-  data_cons * dp;
-  alloc_cons (&cons,sym,val);
-  get_cdr(&cdr,list_top_env);
-  alloc_cons(&env,cons,cdr);
-  dp = (data_cons *)(list_top_env->data);
-  dp->cdr = from_ptr(env);
-  return 0;
-}
-
-
 static int find (cell ** out_y, cell * key, cell * env)
 {
   cell * car, * carcar, *cdr;
@@ -165,163 +152,26 @@ static int find (cell ** out_y, cell * key, cell * env)
   return find(out_y, key, cdr);
 }
 
-
-
-static int prim_cons (cell ** out_y, cell * args)
+static int extend_top_env (cell * sym, cell * val)
 {
-  cell * car, * cdr, * cdrcar;
-  get_car(&car,args);
-  get_cdr(&cdr,args);
-  get_car(&cdrcar,cdr);
-  return alloc_cons (out_y, car, cdrcar);
-}
-
-static int prim_car (cell ** out_y, cell * args)
-{
-  cell * car;
-  get_car(&car,args);
-  return get_car(out_y,car);
-}
-
-static int prim_cdr (cell ** out_y, cell * args)
-{
-  cell * car;
-  get_car(&car,args);
-  return get_cdr(out_y,car);
-}
-
-static int prim_print (cell ** out_y, cell * args)
-{
-  while(args != sym_nil)
-    {
-      cell * car;
-      get_car(&car,args);
-      cell_print (car);
-      io_printf(" ");
-      get_cdr(&args,args);
-    }
-  io_printf("\n");
-  *out_y = sym_nil;
+  cell * cons, * cdr, * env;
+  data_cons * dp;
+  alloc_cons (&cons,sym,val);
+  get_cdr(&cdr,list_top_env);
+  alloc_cons(&env,cons,cdr);
+  dp = (data_cons *)(list_top_env->data);
+  dp->cdr = from_ptr(env);
   return 0;
 }
 
-
-
-static int prim_sum(cell ** out_y, cell * args)
+static int regist_primop (char * name, primop p)
 {
-  int16_t sum = 0;
-  while (args != sym_nil)
-    {
-      cell * car;
-      get_car(&car, args);
-      sum += *((int16_t *)car->data);
-      get_cdr(&args,args);
-    }
-  alloc_int(out_y, sum);
-  return 0;
+  cell * sym, * pop;
+  regist_sym(&sym, name);
+  alloc_primop(&pop, p);
+  extend_top_env(sym, pop);
 }
 
-static int prim_sub(cell ** out_y, cell * args)
-{
-  int16_t sum;
-  cell * car;
-  get_car(&car,args);
-  get_cdr(&args,args);
-  sum = *((int16_t *)car->data);
-  while (args != sym_nil )
-    {
-      cell * car;
-      get_car(&car, args);
-      sum -= *((int16_t *)car->data);
-      get_cdr(&args,args);
-    }
-  alloc_int(out_y, sum);
-  return 0;
-}
-
-static int prim_prod(cell ** out_y, cell * args)
-{
-  int16_t prod = 1;
-  while (args != sym_nil)
-    {
-      cell * car;
-      get_car(&car, args);
-      prod *= *((int16_t *)car->data);
-      get_cdr(&args,args);
-    }
-  alloc_int(out_y, prod);
-  return 0;
-}
-
-static int prim_div(cell ** out_y, cell * args)
-{
-  int16_t prod;
-  cell * car;
-  get_car(&car,args);
-  get_cdr(&args,args);
-  prod = *((int16_t *)car->data);
-  while (args != sym_nil )
-    {
-      cell * car;
-      get_car(&car, args);
-      prod /= *((int16_t *)car->data);
-      get_cdr(&args,args);
-    }
-  alloc_int(out_y, prod);
-  return 0;
-}
-
-
-static int num_args (int16_t * out_x, int16_t * out_y, cell * args)
-{
-  cell * car, * cdr, * cdrcar;
-  get_car(&car,args);
-  get_cdr(&cdr,args);
-  get_car(&cdrcar,cdr);
-
-  *out_x = *((int16_t *)car->data);
-  *out_y = *((int16_t *)cdrcar->data);
-}
-
-static int prim_eq(cell ** out_y, cell * args)
-{
-  int16_t x,y;
-  num_args(&x,&y,args);
-  *out_y = x == y ? sym_t : sym_nil;
-  return 0;
-}
-
-static int prim_gt(cell ** out_y, cell * args)
-{
-  int16_t x,y;
-  num_args(&x,&y,args);
-  *out_y = x > y ? sym_t : sym_nil;
-  return 0;
-}
-
-static int prim_lt(cell ** out_y, cell * args)
-{
-  int16_t x,y;
-  num_args(&x,&y,args);
-  *out_y = x < y ? sym_t : sym_nil;
-  return 0;
-}
-
-static int prim_ge(cell ** out_y, cell * args)
-{
-  int16_t x,y;
-  num_args(&x,&y,args);
-  *out_y = x >= y ? sym_t : sym_nil;
-  return 0;
-}
-
-static int prim_le(cell ** out_y, cell * args)
-{
-  int16_t x,y;
-  num_args(&x,&y,args);
-  *out_y = x <= y ? sym_t : sym_nil;
-  return 0;
-}
 
 
 static int alloc_sym (cell ** out_y, char * name)
@@ -385,21 +235,20 @@ static int alloc_lambda (cell ** out_y, cell * args, cell * code, cell * env)
   return 0;
 }
 
-static int alloc_primop (cell ** out_y, void * p)
+static int alloc_primop (cell ** out_y, primop p)
 {
   cell * r;
-  void ** dp;
+  primop * dp;
   //  int cell_size = sizeof(cell);
-  int cell_size = sizeof(cell_type) + (sizeof(void *)); // 5 byte
+  int cell_size = sizeof(cell_type) + (sizeof(primop)); // 5 byte
   stacka_malloc((char **)&r, cell_size);
 
   r->type = PRIMOP;
-  dp = (void **) (r->data);
+  dp = (primop *) (r->data);
   *dp = p;
   *out_y = r;
   return 0;
 }
-
 
 
 static int get_car (cell ** out_y, cell * x)
@@ -457,129 +306,6 @@ static int get_cdr (cell **out_y, cell * x)
   
   *out_y = to_ptr(dp->cdr);
   return 0;
-}
-
-
-int cell_init ()
-{
-  // sym_nil
-  alloc_sym(&sym_nil,"nil");
-  
-  // list_syms
-  alloc_cons(&list_syms,sym_nil,sym_nil);
-
-    
-  { // list_top_env
-    cell * cons;
-    alloc_cons(&cons,sym_nil,sym_nil);
-    alloc_cons(&list_top_env,cons,sym_nil);
-  }
-  
-  { // sym_t
-    regist_sym(&sym_t,"t");
-    extend_top_env (sym_t, sym_t);
-  }
-  
-  regist_sym(&sym_quote,"quote");
-  regist_sym(&sym_if,"if");
-  regist_sym(&sym_lambda,"lambda");
-  regist_sym(&sym_define,"define");
-  regist_sym(&sym_setb,"set!");
-  regist_sym(&sym_begin,"begin");
-
-  
-  { // cons
-    cell * sym, * pop;
-    regist_sym(&sym, "cons");
-    alloc_primop(&pop, prim_cons);
-    extend_top_env(sym, pop);
-  }
-  
-  { // car
-    cell * sym, * pop;
-    regist_sym(&sym, "car");
-    alloc_primop(&pop, prim_car);
-    extend_top_env(sym, pop);
-  }
-  
-  { // cdr
-    cell * sym, * pop;
-    regist_sym(&sym, "cdr");
-    alloc_primop(&pop, prim_cdr);
-    extend_top_env(sym, pop);
-  }
-  
-  { // print
-    cell * sym, * pop;
-    regist_sym(&sym, "print");
-    alloc_primop(&pop, prim_print);
-    extend_top_env(sym, pop);
-  }
-  
-  { // +
-    cell * sym, * pop;
-    regist_sym(&sym, "+");
-    alloc_primop(&pop, prim_sum);
-    extend_top_env(sym, pop);
-  }
-  
-  { // -
-    cell * sym, * pop;
-    regist_sym(&sym, "-");
-    alloc_primop(&pop, prim_sub);
-    extend_top_env(sym, pop);
-  }
-  
-  { // *
-    cell * sym, * pop;
-    regist_sym(&sym, "*");
-    alloc_primop(&pop, prim_prod);
-    extend_top_env(sym, pop);
-  }
-  
-  { // /
-    cell * sym, * pop;
-    regist_sym(&sym, "/");
-    alloc_primop(&pop, prim_div);
-    extend_top_env(sym, pop);
-  }
-
-  { // =
-    cell * sym, * pop;
-    regist_sym(&sym, "=");
-    alloc_primop(&pop, prim_eq);
-    extend_top_env(sym, pop);
-  }
-
-  { // >
-    cell * sym, * pop;
-    regist_sym(&sym, ">");
-    alloc_primop(&pop, prim_gt);
-    extend_top_env(sym, pop);
-  }
-
-  { // <
-    cell * sym, * pop;
-    regist_sym(&sym, "<");
-    alloc_primop(&pop, prim_lt);
-    extend_top_env(sym, pop);
-  }
-
-  { // >=
-    cell * sym, * pop;
-    regist_sym(&sym, ">=");
-    alloc_primop(&pop, prim_ge);
-    extend_top_env(sym, pop);
-  }
-
-  { // <=
-    cell * sym, * pop;
-    regist_sym(&sym, "<=");
-    alloc_primop(&pop, prim_le);
-    extend_top_env(sym, pop);
-  }
-
-  lexia_init();
 }
 
 
@@ -662,7 +388,6 @@ static int read_list(cell ** out_y)
 }
 
 
-typedef int (*primop)(cell **, cell *);
 
 static int eval_list (cell ** out_y, cell * exps, cell * env);
 
@@ -915,4 +640,297 @@ int cell_print (cell * x)
 }
 
 
+static int prim_cons (cell ** out_y, cell * args);
+static int prim_car (cell ** out_y, cell * args);
+static int prim_cdr (cell ** out_y, cell * args);
+static int prim_atom (cell ** out_y, cell * args);
+static int prim_not (cell ** out_y, cell * args);
+static int prim_eq_sym (cell ** out_y, cell * args);
 
+static int prim_print (cell ** out_y, cell * args);
+
+static int prim_add(cell ** out_y, cell * args);
+static int prim_sub(cell ** out_y, cell * args);
+static int prim_mul(cell ** out_y, cell * args);
+static int prim_div(cell ** out_y, cell * args);
+static int prim_mod(cell ** out_y, cell * args);
+
+static int prim_eq_int(cell ** out_y, cell * args);
+static int prim_ne_int(cell ** out_y, cell * args);
+static int prim_gt(cell ** out_y, cell * args);
+static int prim_lt(cell ** out_y, cell * args);
+static int prim_ge(cell ** out_y, cell * args);
+static int prim_le(cell ** out_y, cell * args);
+
+
+int cell_init ()
+{
+  // sym_nil
+  alloc_sym(&sym_nil,"nil");
+  
+  // list_syms
+  alloc_cons(&list_syms,sym_nil,sym_nil);
+
+    
+  { // list_top_env
+    cell * cons;
+    alloc_cons(&cons,sym_nil,sym_nil);
+    alloc_cons(&list_top_env,cons,sym_nil);
+  }
+  
+  { // sym_t
+    regist_sym(&sym_t,"t");
+    extend_top_env (sym_t, sym_t);
+  }
+  
+  regist_sym(&sym_quote,"quote");
+  regist_sym(&sym_if,"if");
+  regist_sym(&sym_lambda,"lambda");
+  regist_sym(&sym_define,"define");
+  regist_sym(&sym_setb,"set!");
+  regist_sym(&sym_begin,"begin");
+
+  regist_primop ("cons", prim_cons);
+  regist_primop ("car", prim_car);
+  regist_primop ("cdr", prim_cdr);
+  regist_primop ("atom", prim_atom);
+  regist_primop ("not", prim_not);
+  regist_primop ("eq", prim_eq_sym);
+
+  regist_primop ("print", prim_print);
+  
+  regist_primop ("+", prim_add);
+  regist_primop ("-", prim_sub);
+  regist_primop ("*", prim_mul);
+  regist_primop ("/", prim_div);
+  regist_primop ("%", prim_mod);
+  regist_primop ("=", prim_eq_int);
+  regist_primop ("!=", prim_ne_int);
+  regist_primop (">", prim_gt);
+  regist_primop ("<", prim_lt);
+  regist_primop (">=", prim_ge);
+  regist_primop ("<=", prim_le);
+  
+  lexia_init();
+}
+
+
+static int get_args (cell ** out_x1, cell ** out_x2, cell * args)
+{
+  cell * cdr;
+  get_car(out_x1,args);
+  get_cdr(&cdr,args);
+  get_car(out_x2,cdr);
+}
+
+static int prim_cons (cell ** out_y, cell * args)
+{
+  cell * x1, * x2;
+  get_args(&x1,&x2,args);
+
+  return alloc_cons (out_y, x1, x2);
+}
+
+static int prim_car (cell ** out_y, cell * args)
+{
+  cell * car;
+  get_car(&car,args);
+  return get_car(out_y,car);
+}
+
+static int prim_cdr (cell ** out_y, cell * args)
+{
+  cell * car;
+  get_car(&car,args);
+  return get_cdr(out_y,car);
+}
+
+static int prim_atom (cell ** out_y, cell * args)
+{
+  cell * car;
+  get_car(&car,args);
+  
+  *out_y =
+    ( 0
+      || car->type == ATOM_SYM
+      || car->type == ATOM_INT
+      )
+    ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_not (cell ** out_y, cell * args)
+{
+
+  cell * car;
+  get_car(&car,args);
+  
+  *out_y = (car != sym_t) ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_eq_sym (cell ** out_y, cell * args)
+{
+  cell * x1, * x2;
+  get_args(&x1,&x2,args);
+  
+  *out_y = (x1 == x2) ? sym_t : sym_nil;
+  return 0;
+}
+
+
+static int prim_print (cell ** out_y, cell * args)
+{
+  while(args != sym_nil)
+    {
+      cell * car;
+      get_car(&car,args);
+      cell_print (car);
+      io_printf(" ");
+      get_cdr(&args,args);
+    }
+  io_printf("\n");
+  *out_y = sym_nil;
+  return 0;
+}
+
+
+static int prim_add(cell ** out_y, cell * args)
+{
+  int16_t sum = 0;
+  while (args != sym_nil)
+    {
+      cell * car;
+      get_car(&car, args);
+      sum += *((int16_t *)car->data);
+      get_cdr(&args,args);
+    }
+  alloc_int(out_y, sum);
+  return 0;
+}
+
+static int prim_sub(cell ** out_y, cell * args)
+{
+  int16_t sum;
+  cell * car;
+  get_car(&car,args);
+  get_cdr(&args,args);
+  sum = *((int16_t *)car->data);
+  while (args != sym_nil )
+    {
+      cell * car;
+      get_car(&car, args);
+      sum -= *((int16_t *)car->data);
+      get_cdr(&args,args);
+    }
+  alloc_int(out_y, sum);
+  return 0;
+}
+
+static int prim_mul(cell ** out_y, cell * args)
+{
+  int16_t prod = 1;
+  while (args != sym_nil)
+    {
+      cell * car;
+      get_car(&car, args);
+      prod *= *((int16_t *)car->data);
+      get_cdr(&args,args);
+    }
+  alloc_int(out_y, prod);
+  return 0;
+}
+
+static int prim_div(cell ** out_y, cell * args)
+{
+  int16_t prod;
+  cell * car;
+  get_car(&car,args);
+  get_cdr(&args,args);
+  prod = *((int16_t *)car->data);
+  while (args != sym_nil )
+    {
+      cell * car;
+      get_car(&car, args);
+      prod /= *((int16_t *)car->data);
+      get_cdr(&args,args);
+    }
+  alloc_int(out_y, prod);
+  return 0;
+}
+
+static int prim_mod(cell ** out_y, cell * args)
+{
+  int16_t prod;
+  cell * car;
+  get_car(&car,args);
+  get_cdr(&args,args);
+  prod = *((int16_t *)car->data);
+  while (args != sym_nil )
+    {
+      cell * car;
+      get_car(&car, args);
+      prod %= *((int16_t *)car->data);
+      get_cdr(&args,args);
+    }
+  alloc_int(out_y, prod);
+  return 0;
+}
+
+
+static int get_args_int (int16_t * out_x1, int16_t * out_x2, cell * args)
+{
+  cell * x1, * x2;
+  get_args(&x1,&x2,args);
+  
+  *out_x1 = *((int16_t *)x1->data);
+  *out_x2 = *((int16_t *)x2->data);
+}
+
+static int prim_eq_int(cell ** out_y, cell * args)
+{
+  int16_t x1, x2;
+  get_args_int(&x1,&x2,args);
+  *out_y = x1 == x2 ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_ne_int(cell ** out_y, cell * args)
+{
+  int16_t x1, x2;
+  get_args_int(&x1,&x2,args);
+  *out_y = x1 != x2 ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_gt(cell ** out_y, cell * args)
+{
+  int16_t x1, x2;
+  get_args_int(&x1,&x2,args);
+  *out_y = x1 > x2 ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_lt(cell ** out_y, cell * args)
+{
+  int16_t x1, x2;
+  get_args_int(&x1,&x2,args);
+  *out_y = x1 < x2 ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_ge(cell ** out_y, cell * args)
+{
+  int16_t x1, x2;
+  get_args_int(&x1,&x2,args);
+  *out_y = x1 >= x2 ? sym_t : sym_nil;
+  return 0;
+}
+
+static int prim_le(cell ** out_y, cell * args)
+{
+  int16_t x1, x2;
+  get_args_int(&x1,&x2,args);
+  *out_y = x1 <= x2 ? sym_t : sym_nil;
+  return 0;
+}
