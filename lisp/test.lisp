@@ -6,6 +6,87 @@
 
 (defun lmd1 (lambda (x) (+ x 1)) )
 
+(quote 1)
+(quote (1 2))
+(quote (1 2 3))
+(quote a)
+(quote (a b))
+(quote (a b c))
+
+(if t 100 200)
+(if nil 100 200)
+(if () 100 200)
+(if (= 1 1) 100 200)
+(if (= 0 1) 100 200)
+
+((lambda (x) (+ x 1)) 1)
+((lambda (x) (+ x 1)) 2)
+((lambda (x) (+ x 1)) 100)
+
+((lambda (x y) (+ x y)) 1 2)
+((lambda (x y) (+ x y)) 2 3)
+((lambda (x y) (+ x y)) 100 101)
+
+(
+ (
+  (lambda (x)
+    (lambda (y) (+ x y))
+    )
+  1)
+ 2)
+
+(
+ (
+  (lambda (x)
+    (lambda (y) (+ x y))
+    )
+  2)
+ 3)
+
+(
+ (
+  (lambda (x)
+    (lambda (y) (+ x y))
+    )
+  100)
+ 101)
+
+
+(begin
+ (print 'Alpha)
+ (print 'Bravo)
+ (print 'Charl)
+ )
+
+
+(cons 1 (cons 2 nil))
+(cons 1 (cons 2 (cons 3 nil)))
+
+(car (cons 1 (cons 2 nil)))
+(cdr (cons 1 (cons 2 (cons 3 nil))))
+
+(atom 1)
+(atom '(1 2 3 4))
+(atom (car '(1 2 3 4)))
+(atom (cdr '(1 2 3 4)))
+
+(atom 'a)
+(atom '(a b c d))
+(atom (car '(a b c d)))
+(atom (cdr '(a b c d)))
+
+(eq t t)
+(eq nil nil)
+(eq () ())
+(eq t nil)
+(eq t ())
+(eq nil ())
+
+(not t)
+(not nil)
+(not ())
+(not (= 1 1))
+(not (= 1 2))
 
 
 (define f1
@@ -64,3 +145,5 @@
     )
   )
 (while3 0)
+
+
