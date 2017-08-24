@@ -9,13 +9,27 @@
 
 /**
 
- * 例外発生場所
+ ** 例外発生場所
  * cell_car 
  * cell_cdr
  * cell_read で不正なトークン
  * stacka
  * lexia
  * undefined を定義すれば良さそう
+
+ ** メモリ確保場所
+ * Init時
+ ** list_syms, list_top_env
+ ** 各symbol
+ ** 各primop
+ * Read時
+ * Eval時
+ ** lambda で始まるconsを評価するとき(lambda: 1)
+ ** define で始まるconsを評価するとき(extend_top_env(cons:2))
+ ** lambda を評価するとき(extend_list(cons:2) cons:1)
+ ** primop を評価するとき(戻り値用に色々)
+ ** list を評価するとき (cons:1)
+
 
  */
 
@@ -180,6 +194,9 @@ static int alloc_sym (cell ** out_y, char * name)
   //  int cell_size = sizeof(cell);
   int cell_size = sizeof(cell_type) + 7; // 8 byte
   stacka_malloc((char **)&r, cell_size);
+#ifdef  __STACKA_DEBUG_
+  io_printf ("__STACKA_DEBUG_[alloc_sym]: %dbyte\n", cell_size);
+#endif
 
   r->type = ATOM_SYM;
   strcpy(r->data, name);
@@ -194,6 +211,9 @@ static int alloc_int (cell ** out_y, int16_t v)
   //  int cell_size = sizeof(cell);
   int cell_size = sizeof(cell_type) + sizeof(int16_t); // 3 byte
   stacka_malloc((char **)&r, cell_size);
+#ifdef  __STACKA_DEBUG_
+  io_printf ("__STACKA_DEBUG_[alloc_int]: %dbyte\n", cell_size);
+#endif
 
   r->type = ATOM_INT;
   dp = (int16_t *)(r->data);
@@ -209,6 +229,9 @@ static int alloc_cons (cell ** out_y, cell * car, cell * cdr)
   //  int cell_size = sizeof(cell);
   int cell_size = sizeof(cell_type) + sizeof(data_cons); // 5 byte
   stacka_malloc((char **)&r, cell_size);
+#ifdef  __STACKA_DEBUG_
+  io_printf ("__STACKA_DEBUG_[alloc_cons]: %dbyte\n", cell_size);
+#endif
 
   r->type = CONS;
   dp = (data_cons *) (r->data);
@@ -225,6 +248,9 @@ static int alloc_lambda (cell ** out_y, cell * args, cell * code, cell * env)
   //  int cell_size = sizeof(cell);
   int cell_size = sizeof(cell_type) + sizeof(data_lambda); // 7 byte
   stacka_malloc((char **)&r, cell_size);
+#ifdef  __STACKA_DEBUG_
+  io_printf ("__STACKA_DEBUG_[alloc_lambda]: %dbyte\n", cell_size);
+#endif
 
   r->type = LAMBDA;
   dp = (data_lambda *) (r->data);
@@ -242,6 +268,9 @@ static int alloc_primop (cell ** out_y, primop p)
   //  int cell_size = sizeof(cell);
   int cell_size = sizeof(cell_type) + (sizeof(primop)); // 5 byte
   stacka_malloc((char **)&r, cell_size);
+#ifdef  __STACKA_DEBUG_
+  io_printf ("__STACKA_DEBUG_[alloc_primop]: %dbyte\n", cell_size);
+#endif
 
   r->type = PRIMOP;
   dp = (primop *) (r->data);
@@ -389,7 +418,13 @@ static int read_list(cell ** out_y)
 
 
 
+static int eval_raw (cell ** out_y, cell * exp, cell * env);
 static int eval_list (cell ** out_y, cell * exps, cell * env);
+
+int cell_eval (cell ** out_y, cell * x)
+{
+  return eval_raw(out_y, x, list_top_env);
+}
 
 static int eval_raw (cell ** out_y, cell * exp, cell * env)
 {
@@ -446,6 +481,9 @@ static int eval_raw (cell ** out_y, cell * exp, cell * env)
 	  }
 	else if (car == sym_lambda)
 	  {
+#ifdef __CELL_DEBUG_
+	    io_printf("__CELL_DEBUG_[lambda]: "); cell_print(exp); io_printf("\n");
+#endif
 	    cell * cdr, * cdrcar, * cdrcdr;
 	    get_cdr(&cdr,exp);
 	    get_car(&cdrcar,cdr);
@@ -454,6 +492,9 @@ static int eval_raw (cell ** out_y, cell * exp, cell * env)
 	  }
 	else if(car == sym_define)
 	  {
+#ifdef __CELL_DEBUG_
+	    io_printf("__CELL_DEBUG_[define]: "); cell_print(exp); io_printf("\n");
+#endif
 	    cell * cdr, * cdrcar, * cdrcdr, * cdrcdrcar;
 	    cell * ecdrcdrcar;
 	    get_cdr(&cdr,exp);
@@ -512,6 +553,9 @@ static int eval_raw (cell ** out_y, cell * exp, cell * env)
 	  }
 	else
 	  {
+#ifdef __CELL_DEBUG_
+	    io_printf("__CELL_DEBUG_[cons]: "); cell_print(exp); io_printf("\n");
+#endif
 	    cell * cdr, * proc, * args;
 	    get_cdr(&cdr,exp);
 	    eval_raw(&proc, car, env);
@@ -559,6 +603,9 @@ static int eval_raw (cell ** out_y, cell * exp, cell * env)
 
 static int eval_list (cell ** out_y, cell * exps, cell * env)
 {
+#ifdef __CELL_DEBUG_
+	    io_printf("__CELL_DEBUG_[list]: "); cell_print(exps); io_printf("\n");
+#endif
   if(exps == sym_nil)
     {
       *out_y = sym_nil;
@@ -573,10 +620,6 @@ static int eval_list (cell ** out_y, cell * exps, cell * env)
   return alloc_cons(out_y, ecar,ecdr);
 }
 
-int cell_eval (cell ** out_y, cell * x)
-{
-  return eval_raw(out_y, x, list_top_env);
-}
 
 
 int cell_print (cell * x)

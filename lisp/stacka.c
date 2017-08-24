@@ -36,3 +36,18 @@ int stacka_free ()
   loc_stackused = 0;
   return 0;
 }  
+
+
+
+
+/**
+ * Debug Utils
+ *
+ */
+#ifdef  __STACKA_DEBUG_
+int stacka_stackused () {
+  return loc_stackused;
+}
+#endif
+
+

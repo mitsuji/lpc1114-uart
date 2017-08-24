@@ -9,4 +9,14 @@ int stacka_malloc (char ** out_addr, int size);
 int stacka_free ();
 
 
+
+/**
+ * Debug Utils
+ *
+ */
+#ifdef  __STACKA_DEBUG_
+int stacka_stackused ();
+#endif
+
+
 #endif
