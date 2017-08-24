@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define CELL_READ_EOF 0x00030001
+
+
 typedef uint8_t cell_type;
 #define ATOM_SYM 1
 #define ATOM_INT 2

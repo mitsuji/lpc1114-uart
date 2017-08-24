@@ -25,7 +25,10 @@ void test_cell()
 
   while(1){
     cell * r, * e;
-    cell_read(&r);
+    if ( cell_read(&r) == CELL_READ_EOF )
+      {
+	exit(0);
+      }
 
 #ifdef  __STACKA_DEBUG_
     io_printf("__STACKA_DEBUG_[read]: stackused %dbyte\n", stacka_stackused());

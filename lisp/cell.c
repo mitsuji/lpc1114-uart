@@ -345,7 +345,11 @@ static int read_list(cell ** out_y);
 int cell_read(cell ** out_y)
 {
   char * token;
-  lexia_get_token(&token);
+  if (lexia_get_token(&token) == LEXIA_EOF)
+    {
+      return CELL_READ_EOF;
+    }
+  
   return read_raw(out_y, token);
 }
 
@@ -353,13 +357,22 @@ static int read_raw(cell ** out_y, char * token)
 {
   if(!strcmp(token, "("))
     {
-      read_list(out_y);
+      int ecode;
+      if ( (ecode = read_list(out_y)) )
+	{
+	  return ecode;
+	}
       return 0;
     }
   else if(!strcmp(token, "\'"))
     {
+      int ecode;
       cell * tmp;
-      cell_read(&tmp);
+      if ( (ecode = cell_read(&tmp)) )
+	{
+	  return ecode;
+	}
+      
       cell * cons;
       alloc_cons(&cons,tmp,sym_nil);
       alloc_cons(out_y,sym_quote,cons);
@@ -382,7 +395,10 @@ static int read_raw(cell ** out_y, char * token)
 static int read_list(cell ** out_y)
 {
   char * token;
-  lexia_get_token(&token);
+  if (lexia_get_token(&token) == LEXIA_EOF)
+    {
+      return CELL_READ_EOF;
+    }
   
   if(!strcmp(token, ")"))
     {
@@ -391,11 +407,20 @@ static int read_list(cell ** out_y)
     }
   else if(!strcmp(token, "."))
     {
+      int ecode;
       cell * tmp;
       char * end_token;
-      cell_read(&tmp);
-      lexia_get_token(&end_token);
-      if(strcmp(end_token, ")"))
+      if ( (ecode = cell_read(&tmp)) )
+	{
+	  return ecode;
+	}
+      
+      if (lexia_get_token(&end_token) == LEXIA_EOF)
+	{
+	  return CELL_READ_EOF;
+	}
+      
+      if (strcmp(end_token, ")"))
 	{
 	  return 0x00000001;
 	}
@@ -407,10 +432,17 @@ static int read_list(cell ** out_y)
     }
   else
     {
+      int ecode;
       cell * tmp;
       cell * cons;
-      read_raw(&tmp,token);
-      read_list(&cons);
+      if ( (ecode = read_raw(&tmp,token)) )
+	{
+	  return ecode;
+	}
+      if ( (ecode = read_list(&cons)) )
+	{
+	  return ecode;
+	}
       alloc_cons(out_y, tmp, cons);
       return 0;
     }
