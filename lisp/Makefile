@@ -6,11 +6,12 @@ defines =
 
 main:
 	gcc $(defines) -m32 -c -std=c99 -o io.o io.c
+	gcc $(defines) -m32 -c -std=c99 -o allocstr.o allocstr.c
 	gcc $(defines) -m32 -c -std=c99 -o lexia.o lexia.c
 	gcc $(defines) -m32 -c -std=c99 -o stacka.o stacka.c
 	gcc $(defines) -m32 -c -std=c99 -o cell.o cell.c
 	gcc $(defines) -m32 -c -std=c99 -o main.o main.c
-	gcc $(defines) -m32 -o lisp io.o lexia.o stacka.o cell.o main.o
+	gcc $(defines) -m32 -o lisp io.o allocstr.o lexia.o stacka.o cell.o main.o
 
 
 clean:
@@ -19,4 +20,5 @@ clean:
 	rm cell.o
 	rm stacka.o
 	rm lexia.o
+	rm allocstr.o
 	rm io.o

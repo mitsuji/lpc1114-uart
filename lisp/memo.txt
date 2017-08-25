@@ -17,3 +17,15 @@ http://www.schemers.org/Documents/Standards/R5RS/r5rs.pdf
 * implement GC
 * implement Exception Handling
 
+
+     [Use Flag Table]
+     chars:  256byte -> table: 32byte
+     chars:  512byte -> table: 64byte
+     chars: 1024byte -> table: 128byte
+     chars: 2048byte -> table: 256byte
+     chars: 3072byte -> table: 384byte
+     chars: 4096byte -> table: 512byte
+
+     chars = size * (8/9)
+     table = size * (1/9)
+

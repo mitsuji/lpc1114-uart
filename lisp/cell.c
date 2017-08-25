@@ -30,6 +30,10 @@
  ** primop を評価するとき(戻り値用に色々)
  ** list を評価するとき (cons:1)
 
+ ** アロケータ
+ * string allocator
+ * block allocator (1block = 5byte)
+
 
  */
 
