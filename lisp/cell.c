@@ -5,6 +5,7 @@
 #include "lexia.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 
 /**
@@ -307,6 +308,83 @@ static int get_cdr (cell **out_y, cell * x)
   *out_y = to_ptr(dp->cdr);
   return 0;
 }
+
+
+
+int parse_exp(cell ** out_y, int c);
+int parse_list(cell ** out_y);
+int parse_atom(cell ** out_y, int c);
+
+int parse_exp(cell ** out_y, int c)
+{
+  // ';'  // コメント開始
+  // '\n' // コメント解除
+  
+  // '('  // タプル・リスト開始
+  // ')'  // タプル・リスト終了
+  // '.'  // タプル区切り
+  // (-){0123456789} // ATOM_INT
+  // other // ATOM_SYM
+
+
+  // スペース飛ばし
+  while( isspace(c) )
+    {
+      c = io_getc();
+    }
+  
+  if (c == '(')
+    {
+      // parse_list(out_y);
+    }
+  else if (c == '\'')
+    {
+      // parse_raw
+      // quote cell
+    }
+  else
+    {
+      // parse_sym
+    }
+  
+}
+
+
+int parse_list(cell ** out_y)
+{
+  // "  )  "
+  // "  {exp}  )  "
+  // "  {exp}  {exp}  {exp}  )  "
+  // "  {exp}  .  {exp}  )  "
+  // 
+  //  int c = io_getc ();
+  //
+  //  
+  //  
+  // 
+  
+  
+}
+
+
+int parse_atom(cell ** out_y, int c)
+{
+  char buff [32];
+  int i = 0;
+  do
+    {
+      // i buff len
+      buff[i++] = c;
+      c = io_getc();
+    }
+  while ( !isspace(c) );
+
+  // ATOM_INT
+  // ATOM_SYM
+  
+}
+
+
 
 
 
